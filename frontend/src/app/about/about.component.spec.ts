@@ -14,7 +14,6 @@ import { of, throwError } from 'rxjs'
 import { ConfigurationService } from '../Services/configuration.service'
 import { FeedbackService } from '../Services/feedback.service'
 import { Gallery } from 'ng-gallery'
-import { DomSanitizer } from '@angular/platform-browser'
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 import { AboutComponent } from './about.component'
@@ -27,7 +26,6 @@ describe('AboutComponent', () => {
     let feedbackService
     let gallery
     let galleryRef
-    let sanitizer
 
     beforeEach(async () => {
         configurationService = {
@@ -52,9 +50,6 @@ describe('AboutComponent', () => {
         gallery = {
             ref: vi.fn().mockName("Gallery.ref").mockReturnValue(galleryRef)
         }
-        sanitizer = {
-            bypassSecurityTrustHtml: vi.fn().mockName("DomSanitizer.bypassSecurityTrustHtml").mockImplementation((value: string) => value)
-        }
 
         TestBed.configureTestingModule({
             schemas: [NO_ERRORS_SCHEMA],
@@ -66,7 +61,6 @@ describe('AboutComponent', () => {
                 { provide: TranslateService, useValue: translateService },
                 { provide: FeedbackService, useValue: feedbackService },
                 { provide: Gallery, useValue: gallery },
-                { provide: DomSanitizer, useValue: sanitizer },
                 provideHttpClient(withInterceptorsFromDi()),
                 provideHttpClientTesting()
             ]
@@ -173,13 +167,12 @@ describe('AboutComponent', () => {
 
         component.populateSlideshowFromFeedbacks()
 
-        expect(sanitizer.bypassSecurityTrustHtml).toHaveBeenCalledTimes(1)
-        const sanitizedHtml = sanitizer.bypassSecurityTrustHtml.mock.calls[0][0]
-        expect(sanitizedHtml).toContain('<p class="feedback-comment">Great!</p>')
-        expect(sanitizedHtml).toContain('feedback-stars')
-        expect((sanitizedHtml.match(/fas fa-star/g) ?? []).length).toBe(3)
-        expect((sanitizedHtml.match(/far fa-star/g) ?? []).length).toBe(2)
         expect(galleryRef.addImage).toHaveBeenCalledTimes(1)
+        const html = galleryRef.addImage.mock.calls[0][0].args
+        expect(html).toContain('<p class="feedback-comment">Great!</p>')
+        expect(html).toContain('feedback-stars')
+        expect((html.match(/fas fa-star/g) ?? []).length).toBe(3)
+        expect((html.match(/far fa-star/g) ?? []).length).toBe(2)
         expect(galleryRef.addImage.mock.calls[0][0].src).toBe('assets/public/images/carousel/1.jpg')
     })
 
